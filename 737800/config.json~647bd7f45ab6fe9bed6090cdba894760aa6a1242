@@ -4,7 +4,8 @@
     "XPLANE_PORT": 49000,
     "SERVER_IP": "127.0.0.1",
     "SERVER_PORT": 49008,
-	"SELECTED_AIRCRAFT": "B738"
+    "SELECTED_AIRCRAFT": "B738",
+    "DEBUG": 0
   },
   "B738": {
     "imgfolder": "737800/",
