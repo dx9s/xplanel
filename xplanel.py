@@ -19,7 +19,8 @@ import pyxpudpserver as XPUDP
 
 configfile ='config.json'
 
-if len(sys.argv)==1:
+if len(sys.argv)==2:
+    print("Loading:"+sys.argv[1])
     configfile = sys.argv[1]
 
 with open(configfile, 'r') as f:
