@@ -17,7 +17,7 @@ import pyxpudpserver as XPUDP
 
 with open('config.json', 'r') as f:
     config = json.load(f)
-	
+
 drefcmds = config[config['MAIN']['SELECTED_AIRCRAFT']]['drefcmds']
 imagesDir = config[config['MAIN']['SELECTED_AIRCRAFT']]['imgfolder']
 
@@ -28,7 +28,7 @@ keyImagesOn = {}
 keyImagesOff = {}
 
 debug=True
-	
+
 XPUDP.pyXPUDPServer.initialiseUDP((config['MAIN']['SERVER_IP'],config['MAIN']['SERVER_PORT']), (config['MAIN']['XPLANE_IP'],config['MAIN']['XPLANE_PORT']), 'XPLANEL')
 XPUDP.pyXPUDPServer.start()
 
@@ -63,7 +63,7 @@ def update_key_image(deck, key, state, imageIn):
 # associated actions when a key is pressed.
 def key_change_callback(deck, key, state):
 
-    try:    
+    try:
         # Check if the key is changing to the pressed state
         if state:
 	        # Print new key state
@@ -71,9 +71,9 @@ def key_change_callback(deck, key, state):
             if debug:
                 print(keyNames[key]+"|{}|{}".format(key, keyStates[key]))
             # Update the key image based on the new key state
-            #update_key_image(deck, key, state)				
+            #update_key_image(deck, key, state)
             updateDeck()
-			
+
             for x in drefcmds:
                 if x['imgrefn']==keyNames[key]:
                     XPUDP.pyXPUDPServer.sendXPCmd(x['command'])
@@ -86,30 +86,30 @@ def key_change_callback(deck, key, state):
                 innerCycle = False
     except KeyError:
         print ('NA')
-		
+
 def updateDeck():
     global keyStatesOld
     global keyImagesOn
     global streamdecks
     for index, deck in enumerate(streamdecks):
-        if(keyStatesOld!=keyStates):	
+        if(keyStatesOld!=keyStates):
             for key, status in keyStatesOld.items():
                  if(keyStates[key]!=keyStatesOld[key]):
                       if(keyStates[key]==True):
                           update_key_image(deck, key, False, keyImagesOn[key] )
                       else:
                           update_key_image(deck, key, False, keyImagesOff[key] )
-                      keyStatesOld=keyStates.copy() 
+                      keyStatesOld=keyStates.copy()
 
-					  
+
 async def mainFunction():
 
-    global streamdecks	
+    global streamdecks
     streamdecks = DeviceManager().enumerate()
 
     global keyNames
     global keyStates
-    global keyStatesOld 
+    global keyStatesOld
     global keyImagesOn
     global keyImagesOff
     global innerCycle
@@ -117,7 +117,7 @@ async def mainFunction():
 
     if debug:
         print("Found {} Stream Deck(s).\n".format(len(streamdecks)))
-	
+
     for index, deck in enumerate(streamdecks):
         deck.open()
         deck.reset()
@@ -127,25 +127,25 @@ async def mainFunction():
         buttonsImages = os.listdir(imagesDir);
         for i in range(len(buttonsImages)):
             splitFileName = buttonsImages[i].split(".")
-            
+
             if splitFileName[2]=="off":
                 update_key_image(deck, int(splitFileName[0]), False, imagesDir+buttonsImages[i] )
-                keyNames[int(splitFileName[0])]=splitFileName[1]        
-                keyStates[int(splitFileName[0])]=False	
-                keyImagesOff[int(splitFileName[0])]=imagesDir+buttonsImages[i]		
+                keyNames[int(splitFileName[0])]=splitFileName[1]
+                keyStates[int(splitFileName[0])]=False
+                keyImagesOff[int(splitFileName[0])]=imagesDir+buttonsImages[i]
             else:
-                keyImagesOn[int(splitFileName[0])]=imagesDir+buttonsImages[i]			
-		
+                keyImagesOn[int(splitFileName[0])]=imagesDir+buttonsImages[i]
+
         keyStatesOld=keyStates.copy()
         deck.set_key_callback(key_change_callback)
 
-				 
+
 def DecodePacket(data):
   retvalues = {}
   # Read the Header "RREFO".
   header=data[0:5]
   # We get 8 bytes for every dataref sent:
-  #    An integer for idx and the float value. 
+  #    An integer for idx and the float value.
   values =data[5:]
   lenvalue = 8
   numvalues = int(len(values)/lenvalue)
@@ -161,14 +161,14 @@ async def subFunction():
 
   global keyStates
   global keyNames
-  
+
   while True:
-  
-    time.sleep(0.1) 
+
+    time.sleep(0.1)
     # Print Values:
     for x in drefcmds:
         val = XPUDP.pyXPUDPServer.getData(x['dataref'])
-        if debug:		
+        if debug:
             print(x['imgrefn'],val)
         if val > 0 :
             for button, name in keyNames.items():
@@ -182,14 +182,14 @@ async def subFunction():
                 if name == x['imgrefn'] :
                     keyStates[button]=False
                     updateDeck()
-        if debug:		
+        if debug:
             print(x['dataref'],x['command'],x['imgrefn'])
             print(np.matrix(keyStates))
 
 if __name__ == "__main__":
-	
+
 	# this is the event loop
     loop = asyncio.get_event_loop()
     # schedule both the coroutines to run on the event loop
     loop.run_until_complete(asyncio.gather(mainFunction(), subFunction()))
-	
+
