@@ -4,8 +4,10 @@
 #
 #	   Thanks to pyXPUDPServer and Python Stream Deck libraries
 
+# importing getopt breaks one of the other libraries below!!!!
 import json
 import os
+import sys
 import asyncio
 import socket
 import time
@@ -15,11 +17,21 @@ from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
 import pyxpudpserver as XPUDP
 
-with open('config.json', 'r') as f:
+configfile ='config.json'
+
+if len(sys.argv)==1:
+    configfile = sys.argv[1]
+
+with open(configfile, 'r') as f:
     config = json.load(f)
+
+debug = False
 
 drefcmds = config[config['MAIN']['SELECTED_AIRCRAFT']]['drefcmds']
 imagesDir = config[config['MAIN']['SELECTED_AIRCRAFT']]['imgfolder']
+
+if config['MAIN']['DEBUG']:
+    debug = True
 
 keyNames = {}
 keyStates = {}
@@ -27,7 +39,7 @@ keyStatesOld = {}
 keyImagesOn = {}
 keyImagesOff = {}
 
-debug=True
+
 
 XPUDP.pyXPUDPServer.initialiseUDP((config['MAIN']['SERVER_IP'],config['MAIN']['SERVER_PORT']), (config['MAIN']['XPLANE_IP'],config['MAIN']['XPLANE_PORT']), 'XPLANEL')
 XPUDP.pyXPUDPServer.start()
@@ -126,15 +138,17 @@ async def mainFunction():
         deck.set_brightness(100)
         buttonsImages = os.listdir(imagesDir);
         for i in range(len(buttonsImages)):
-            splitFileName = buttonsImages[i].split(".")
+            # ignore files that "appear" to not be a PNG
+            if buttonsImages[i].find('.png') > 0:
+                splitFileName = buttonsImages[i].split(".")
 
-            if splitFileName[2]=="off":
-                update_key_image(deck, int(splitFileName[0]), False, imagesDir+buttonsImages[i] )
-                keyNames[int(splitFileName[0])]=splitFileName[1]
-                keyStates[int(splitFileName[0])]=False
-                keyImagesOff[int(splitFileName[0])]=imagesDir+buttonsImages[i]
-            else:
-                keyImagesOn[int(splitFileName[0])]=imagesDir+buttonsImages[i]
+                if splitFileName[2]=="off":
+                    update_key_image(deck, int(splitFileName[0]), False, imagesDir+buttonsImages[i] )
+                    keyNames[int(splitFileName[0])]=splitFileName[1]
+                    keyStates[int(splitFileName[0])]=False
+                    keyImagesOff[int(splitFileName[0])]=imagesDir+buttonsImages[i]
+                else:
+                    keyImagesOn[int(splitFileName[0])]=imagesDir+buttonsImages[i]
 
         keyStatesOld=keyStates.copy()
         deck.set_key_callback(key_change_callback)
